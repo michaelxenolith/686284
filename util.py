@@ -61,9 +61,13 @@ USER_AGENTS = [
 
 
 def parse_json(s):
-    begin = s.find('{')
-    end = s.rfind('}') + 1
-    return json.loads(s[begin:end])
+    try:
+        begin = s.find('{')
+        end = s.rfind('}') + 1
+        return json.loads(s[begin:end])
+    except json.decoder.JSONDecodeError:
+        print(s)
+    return ""
 
 
 def get_random_useragent():

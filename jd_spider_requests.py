@@ -597,6 +597,11 @@ class JdSeckill(object):
         except Exception as e:
             logger.info('抢购失败，返回信息:{}'.format(resp.text[0: 128]))
             return False
+
+        # 如果返回url之类的string直接return
+        if isinstance(resp_json, str):
+            return False
+
         # 返回信息
         # 抢购失败：
         # {'errorMessage': '很遗憾没有抢到，再接再厉哦。', 'orderId': 0, 'resultCode': 60074, 'skuId': 0, 'success': False}

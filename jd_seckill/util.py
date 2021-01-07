@@ -152,7 +152,6 @@ class Email():
         if global_config.getRaw('messenger', 'email_enable') == 'false':
             return
 
-        smtpObj = smtplib.SMTP()
         # 没传会自动判断 判断不出来默认QQ邮箱
         if mail_host:
             self.mail_host = mail_host
@@ -168,8 +167,9 @@ class Email():
             self.mail_host = 'smtp.qq.com'
         self.mail_user = mail_user
         self.is_login = False
+        smtpObj = smtplib.SMTP_SSL(mail_host, 465)
         try:
-            smtpObj.connect(mail_host, 25)
+            # smtpObj.connect(mail_host, 25)
             smtpObj.login(mail_user, mail_pwd)
             self.is_login = True
         except Exception as e:

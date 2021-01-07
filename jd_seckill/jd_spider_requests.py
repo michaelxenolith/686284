@@ -421,7 +421,14 @@ class JdSeckill(object):
         """
         抢购
         """
-        self._seckill()
+        while self.running_flag:
+            self.seckill_canstill_running()
+            try:
+                self._seckill()
+            except Exception as e:
+                logger.info('抢购发生异常，稍后继续执行！', e)
+            wait_some_time()
+
 
     @check_login_and_jdtdufp
     def seckill_by_proc_pool(self, work_count=5):
@@ -429,6 +436,13 @@ class JdSeckill(object):
         多进程进行抢购
         work_count：进程数量
         """
+
+        try:
+            self.seckill_order_data[self.sku_id] = self._get_seckill_order_data()
+        except Exception as e:
+            logger.info('抢购失败，无法获取生成订单的基本信息，接口返回：【{}】'.format(str(e)))
+            return False
+
         with ProcessPoolExecutor(work_count) as pool:
             for i in range(work_count):
                 pool.submit(self.seckill)
@@ -449,17 +463,35 @@ class JdSeckill(object):
         """
         抢购
         """
-        while self.running_flag:
-            self.seckill_canstill_running()
-            try:
-                self.request_seckill_url()
-                while self.running_flag:
-                    self.request_seckill_checkout_page()
-                    self.submit_seckill_order()
-                    self.seckill_canstill_running()
-            except Exception as e:
-                logger.info('抢购发生异常，稍后继续执行！', e)
-            wait_some_time()
+
+        # 提前获取提交订单参数
+        submit_data = self._get_seckill_order_data()
+
+        # 线程等待抢购时间
+        self.timers.start()
+
+        # 访问商品的抢购链接用于设置提交订单的请求cookie
+        self.request_seckill_url()
+
+        # 放弃访问订单页面
+        # self.request_seckill_checkout_page()
+
+        # 循环提交订单
+        self.submit_seckill_order(submit_data)
+
+        # old ver #
+        # while self.running_flag:
+        #     self.seckill_canstill_running()
+        #     try:
+        #         self.request_seckill_url()
+        #         while self.running_flag:
+        #             self.request_seckill_checkout_page()
+        #             self.submit_seckill_order()
+        #             self.seckill_canstill_running()
+        #     except Exception as e:
+        #         logger.info('抢购发生异常，稍后继续执行！', e)
+        #     wait_some_time()
+        # old ver #
 
     def seckill_canstill_running(self):
         """用config.ini文件中的continue_time加上函数buytime_get()获取到的buy_time，
@@ -680,7 +712,7 @@ class JdSeckill(object):
         logger.info("order_date：%s", data)
         return data
 
-    def submit_seckill_order(self):
+    def submit_seckill_order(self, submit_data):
         """提交抢购（秒杀）订单
         :return: 抢购结果 True/False
         """
@@ -689,7 +721,12 @@ class JdSeckill(object):
             'skuId': self.sku_id,
         }
         try:
-            self.seckill_order_data[self.sku_id] = self._get_seckill_order_data()
+            self.seckill_order_data[self.sku_id] = submit_data
+
+            # old ver
+            # self.seckill_order_data[self.sku_id] = self._get_seckill_order_data()
+            # old ver
+
         except Exception as e:
             logger.info('抢购失败，无法获取生成订单的基本信息，接口返回:【{}】'.format(str(e)))
             return False
@@ -711,11 +748,23 @@ class JdSeckill(object):
         try:
             resp_json = parse_json(resp.text)
         except Exception as e:
+
+            # 调用所有线程循环请求 #
+
+
+            # 超出请求次数上限，返回错误
             logger.info('抢购失败，返回信息:{}'.format(resp.text[0: 128]))
             return False
 
         # 如果返回url之类的string直接return
         if isinstance(resp_json, str):
+
+            # 调用所有线程循环请求 #
+
+
+            # 超出请求次数上限，返回错误
+            logger.info('抢购失败，返回信息:{}'.format(resp.text[0: 128]))
+
             return False
 
         # 返回信息
@@ -740,4 +789,11 @@ class JdSeckill(object):
             if global_config.getRaw('messenger', 'server_chan_enable') == 'true':
                 error_message = '抢购失败，返回信息:{}'.format(resp_json)
                 send_wechat(error_message)
+
+            # 调用所有线程循环请求 #
+
+
+            # 超出请求次数上限，返回错误
+            logger.info('抢购失败，返回信息:{}'.format(resp.text[0: 128]))
+
             return False

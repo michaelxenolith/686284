@@ -53,7 +53,10 @@ class Timer(object):
                 logger.info('时间到达，开始执行……')
                 break
             else:
-                time.sleep(self.sleep_interval)
+                pass
+                # old ver
+                # time.sleep(self.sleep_interval)
+                # old ver
 
     def buytime_get(self):
         """获取开始抢购的时间"""

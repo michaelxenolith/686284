@@ -87,7 +87,8 @@ def get_random_useragent():
 
 
 def wait_some_time():
-    time.sleep(random.randint(100, 300) / 1000)
+    print("已经被去掉的0.3秒延迟处理，直接干")
+    #time.sleep(random.randint(100, 300) / 1000)
 
 
 def send_wechat(message):
